@@ -5,9 +5,8 @@ import GanttChart from './components/GanttChart.jsx'
 import ProcessTable from './components/ProcessTable.jsx'
 import Metrics from './components/MetricsTable.jsx'
 
-// ── Make sure these paths are EXACTLY like this ──
 import simulateFCFS from './algorithms/fcfs.js'
-import simulateSJF  from './algorithms/sjf.js'   // ← sjf.js   (not sjif, sif, sjfs)
+import simulateSJF  from './algorithms/sjf.js'
 import simulateSRT  from './algorithms/srt.js'
 import simulateRR   from './algorithms/rr.js'
 import simulateMLFQ from './algorithms/mlfq.js'
@@ -19,7 +18,10 @@ function App() {
   const [result, setResult] = useState(null)
 
   const handleSimulate = () => {
-    if (processes.length === 0) return
+    if (processes.length === 0) {
+      alert('Please add at least one process before simulating.')
+      return
+    }
 
     const copied = JSON.parse(JSON.stringify(processes))
 
@@ -68,31 +70,49 @@ function App() {
 
       <ProcessForm processes={processes} setProcesses={setProcesses} />
 
-      <div style={{ margin: '30px 0' }}>
-        <select value={algorithm} onChange={(e) => setAlgorithm(e.target.value)}>
-          <option value="fcfs">First Come First Serve (FCFS)</option>
-          <option value="sjf">Shortest Job First (SJF - Non-preemptive)</option>
-          <option value="srt">Shortest Remaining Time (SRT - Preemptive)</option>
-          <option value="rr">Round Robin (RR)</option>
-          <option value="mlfq">Multilevel Feedback Queue (MLFQ)</option>
-        </select>
+      <div className="card">
+        <h2>Algorithm Selection</h2>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <select 
+            value={algorithm} 
+            onChange={(e) => {
+              setAlgorithm(e.target.value)
+              setResult(null)
+            }}
+            style={{ flex: 1, minWidth: '250px', maxWidth: '400px' }}
+          >
+            <option value="fcfs">First Come First Serve (FCFS)</option>
+            <option value="sjf">Shortest Job First (SJF)</option>
+            <option value="srt">Shortest Remaining Time (SRT)</option>
+            <option value="rr">Round Robin (RR)</option>
+            <option value="mlfq">Multilevel Feedback Queue (MLFQ)</option>
+          </select>
 
-        {algorithm === 'rr' && (
-          <input
-            type="number"
-            min="1"
-            value={quantum}
-            onChange={(e) => setQuantum(Number(e.target.value))}
-            placeholder="Time Quantum"
-          />
-        )}
+          {algorithm === 'rr' && (
+            <>
+              <label style={{ margin: 0 }}>Quantum:</label>
+              <input
+                type="number"
+                min="1"
+                value={quantum}
+                onChange={(e) => setQuantum(Number(e.target.value))}
+                style={{ width: '80px' }}
+              />
+            </>
+          )}
 
-        <button onClick={handleSimulate}>Simulate</button>
+          <button onClick={handleSimulate}>
+            Simulate
+          </button>
+        </div>
       </div>
 
       {result && (
         <>
-          <GanttChart gantt={result.gantt} />
+          <div className="card">
+            <h2>Gantt Chart</h2>
+            <GanttChart gantt={result.gantt} />
+          </div>
           <ProcessTable processes={result.processes} />
           <Metrics averages={result.averages} />
         </>

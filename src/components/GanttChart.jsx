@@ -23,7 +23,6 @@ export default function GanttChart({ gantt }) {
 
   return (
     <div className="gantt-chart">
-      <h2>Gantt Chart</h2>
       <div className="timeline">
         {gantt.map((seg, i) => (
           <div
@@ -39,9 +38,11 @@ export default function GanttChart({ gantt }) {
               justifyContent: 'center',
               color: seg.pid === 'Idle' ? '#666' : 'white',
               fontWeight: 'bold',
-              fontSize: seg.end - seg.start > 3 ? '14px' : '12px',
+              fontSize: seg.end - seg.start > 3 ? '14px' : '11px',
               overflow: 'hidden',
+              borderRight: '1px solid rgba(0,0,0,0.1)',
             }}
+            title={`${seg.pid}: ${seg.start} - ${seg.end} (Duration: ${seg.end - seg.start})`}
           >
             {seg.pid}
             {seg.end - seg.start > 4 && ` (${seg.start}-${seg.end})`}

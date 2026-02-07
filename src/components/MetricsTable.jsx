@@ -1,11 +1,22 @@
 // src/components/MetricsTable.jsx
 export default function Metrics({ averages }) {
   return (
-    <div>
+    <div className="card">
       <h2>Average Metrics</h2>
-      <p><strong>Average Waiting Time:</strong> {averages.avgWaiting}</p>
-      <p><strong>Average Turnaround Time:</strong> {averages.avgTurnaround}</p>
-      <p><strong>Average Response Time:</strong> {averages.avgResponse}</p>
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <h3>Waiting Time</h3>
+          <p className="value">{averages.avgWaiting}</p>
+        </div>
+        <div className="metric-card">
+          <h3>Turnaround Time</h3>
+          <p className="value">{averages.avgTurnaround}</p>
+        </div>
+        <div className="metric-card">
+          <h3>Response Time</h3>
+          <p className="value">{averages.avgResponse}</p>
+                                                                                                                                                                                                                                                                                                                          </div>
+      </div>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
     </div>
   )
-}
+}                                                                                         
