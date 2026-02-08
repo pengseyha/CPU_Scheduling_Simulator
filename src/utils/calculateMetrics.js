@@ -1,40 +1,26 @@
-export default function calculateMetrics(processes, timeline) {
+export default function calculateMetrics(processes) {
   const metrics = {};
 
   processes.forEach((p) => {
     metrics[p.id] = {
       arrival: p.arrival,
       burst: p.burst,
-      start: null,
-      finish: null,
-      waiting: 0,
-      turnaround: 0,
-      response: null,
+      start: p.start,        // <-- USE ONLY REAL START TIME
+      finish: p.finish,
+      waiting: p.waiting,
+      turnaround: p.turnaround,
+      response: p.response
     };
   });
 
-  timeline.forEach((slot) => {
-    const { pid, start, end } = slot;
-
-    if (metrics[pid].start === null) {
-      metrics[pid].start = start;
-      metrics[pid].response = start - metrics[pid].arrival;
-    }
-
-    metrics[pid].finish = end;
-  });
-
-  Object.values(metrics).forEach((m) => {
-    m.turnaround = m.finish - m.arrival;
-    m.waiting = m.turnaround - m.burst;
-  });
+  const arr = Object.values(metrics);
 
   return {
     perProcess: metrics,
     averages: {
-      waiting: avg(Object.values(metrics).map((m) => m.waiting)),
-      turnaround: avg(Object.values(metrics).map((m) => m.turnaround)),
-      response: avg(Object.values(metrics).map((m) => m.response)),
+      waiting: avg(arr.map((m) => m.waiting)),
+      turnaround: avg(arr.map((m) => m.turnaround)),
+      response: avg(arr.map((m) => m.response)),
     },
   };
 }

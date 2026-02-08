@@ -1,8 +1,13 @@
 // src/components/ProcessForm.jsx
 import { useState } from 'react'
-import { sampleProcesses, sampleProcesses2, sampleProcesses3 } from '../data/sampleProcesses.js'
 
-export default function ProcessForm({ processes, setProcesses }) {
+export default function ProcessForm({
+  processes,
+  setProcesses,
+  mlfqSettings,
+  setMlfqSettings,
+  selectedAlgorithm
+}) {
   const [arrival, setArrival] = useState('')
   const [burst, setBurst] = useState('')
   const [editingId, setEditingId] = useState(null)
@@ -10,22 +15,17 @@ export default function ProcessForm({ processes, setProcesses }) {
   const [editBurst, setEditBurst] = useState('')
   const [error, setError] = useState('')
 
+  // ---------------- PROCESS ADD ----------------
   const handleAdd = () => {
     const arr = Number(arrival)
     const bur = Number(burst)
-    
+
     if (arrival === '' || burst === '') {
       setError('Please enter both arrival and burst time')
       return
     }
-    
-    if (isNaN(arr) || isNaN(bur)) {
-      setError('Please enter valid numbers')
-      return
-    }
-    
-    if (arr < 0 || bur <= 0) {
-      setError('Arrival time must be ≥ 0 and burst time must be > 0')
+    if (isNaN(arr) || isNaN(bur) || arr < 0 || bur <= 0) {
+      setError('Arrival must be ≥ 0 and Burst must be > 0')
       return
     }
 
@@ -36,6 +36,7 @@ export default function ProcessForm({ processes, setProcesses }) {
     setBurst('')
   }
 
+  // ---------------- PROCESS EDIT ----------------
   const handleEdit = (process) => {
     setEditingId(process.id)
     setEditArrival(process.arrival.toString())
@@ -46,56 +47,37 @@ export default function ProcessForm({ processes, setProcesses }) {
   const handleSaveEdit = () => {
     const arr = Number(editArrival)
     const bur = Number(editBurst)
-    
+
     if (isNaN(arr) || isNaN(bur) || arr < 0 || bur <= 0) {
       setError('Invalid values')
       return
     }
 
-    setError('')
-    setProcesses(processes.map(p => 
-      p.id === editingId 
-        ? { ...p, arrival: arr, burst: bur }
-        : p
-    ))
+    setProcesses(
+      processes.map((p) =>
+        p.id === editingId ? { ...p, arrival: arr, burst: bur } : p
+      )
+    )
+
     setEditingId(null)
     setEditArrival('')
     setEditBurst('')
   }
 
   const handleDelete = (id) => {
-    setProcesses(processes.filter(p => p.id !== id))
-  }
-
-  const handleLoadSample = (sample) => {
-    setProcesses(JSON.parse(JSON.stringify(sample)))
-    setError('')
-  }
-
-  const handleClear = () => {
-    if (processes.length === 0) return
-    if (window.confirm('Are you sure you want to clear all processes?')) {
-      setProcesses([])
-      setError('')
-    }
-  }
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleAdd()
-    }
+    setProcesses(processes.filter((p) => p.id !== id))
   }
 
   return (
     <div className="card">
       <h2>Processes</h2>
-      
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+
+      {/* Add Process */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
         <input
           type="number"
           value={arrival}
           onChange={(e) => { setArrival(e.target.value); setError('') }}
-          onKeyPress={handleKeyPress}
           placeholder="Arrival"
           min="0"
           style={{ width: '100px' }}
@@ -104,60 +86,134 @@ export default function ProcessForm({ processes, setProcesses }) {
           type="number"
           value={burst}
           onChange={(e) => { setBurst(e.target.value); setError('') }}
-          onKeyPress={handleKeyPress}
           placeholder="Burst"
           min="1"
           style={{ width: '100px' }}
         />
         <button onClick={handleAdd}>Add</button>
       </div>
+
       {error && <p className="error-message">{error}</p>}
 
+      {/* Process List */}
       {processes.length > 0 && (
-        <div style={{ marginTop: '16px' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '8px' }}>Process List</h3>
-          <ul className="process-list">
-            {processes.map((p) => (
-              <li key={p.id} className="process-item">
-                {editingId === p.id ? (
-                  <>
-                    <div style={{ display: 'flex', gap: '8px', flex: 1, alignItems: 'center' }}>
-                      <input
-                        type="number"
-                        value={editArrival}
-                        onChange={(e) => setEditArrival(e.target.value)}
-                        style={{ width: '70px' }}
-                        min="0"
-                        placeholder="Arrival"
-                      />
-                      <input
-                        type="number"
-                        value={editBurst}
-                        onChange={(e) => setEditBurst(e.target.value)}
-                        style={{ width: '70px' }}
-                        min="1"
-                        placeholder="Burst"
-                      />
-                    </div>
-                    <div className="process-item-actions">
-                      <button onClick={handleSaveEdit} className="small">Save</button>
-                      <button onClick={() => setEditingId(null)} className="small secondary">Cancel</button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="process-item-info">
-                      <strong>{p.id}</strong>: Arrival={p.arrival}, Burst={p.burst}
-                    </div>
-                    <div className="process-item-actions">
-                      <button onClick={() => handleEdit(p)} className="small">Edit</button>
-                      <button onClick={() => handleDelete(p.id)} className="small danger">Delete</button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+        <ul className="process-list">
+        {processes.map((p) => (
+          <li
+            key={p.id}
+            className="process-item"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "8px 0"
+            }}
+          >
+            {editingId === p.id ? (
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <input
+                  type="number"
+                  value={editArrival}
+                  min="0"
+                  onChange={(e) => setEditArrival(e.target.value)}
+                  style={{ width: "70px" }}
+                />
+                <input
+                  type="number"
+                  value={editBurst}
+                  min="1"
+                  onChange={(e) => setEditBurst(e.target.value)}
+                  style={{ width: "70px" }}
+                />
+
+                <button className="small" onClick={handleSaveEdit}>Save</button>
+                <button className="small secondary" onClick={() => setEditingId(null)}>Cancel</button>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <strong>{p.id}</strong>: Arrival={p.arrival}, Burst={p.burst}
+                </div>
+
+                {/* Buttons grouped together */}
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button className="small" onClick={() => handleEdit(p)}>Edit</button>
+                  <button className="small danger" onClick={() => handleDelete(p.id)}>Delete</button>
+                </div>
+              </>
+            )}
+          </li>
+        ))}
+        </ul>
+      )}
+
+      {/* ⭐ MLFQ SETTINGS — only show when algorithm is MLFQ */}
+      {selectedAlgorithm === "mlfq" && (
+        <div className="card" style={{ marginTop: '20px' }}>
+          <h3>MLFQ Settings</h3>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            
+            <label>Q0:</label>
+            <input
+              type="number"
+              min="1"
+              value={mlfqSettings.q0}
+              onChange={(e) =>
+                setMlfqSettings({ ...mlfqSettings, q0: Number(e.target.value) })
+              }
+              style={{ width: '80px' }}
+            />
+
+            <label>Q1:</label>
+            <input
+              type="number"
+              min="1"
+              value={mlfqSettings.q1}
+              onChange={(e) =>
+                setMlfqSettings({ ...mlfqSettings, q1: Number(e.target.value) })
+              }
+              style={{ width: '80px' }}
+            />
+
+            <label>Q2:</label>
+            <input
+              type="number"
+              min="1"
+              disabled={mlfqSettings.modeQ2 === "fcfs"}
+              value={mlfqSettings.q2}
+              onChange={(e) =>
+                setMlfqSettings({ ...mlfqSettings, q2: Number(e.target.value) })
+              }
+              style={{ width: '80px' }}
+            />
+
+            <label>Level 2 Mode:</label>
+            <select
+              value={mlfqSettings.modeQ2}
+              onChange={(e) =>
+                setMlfqSettings({ ...mlfqSettings, modeQ2: e.target.value })
+              }
+              style={{ width: '120px' }}
+            >
+              <option value="fcfs">FCFS</option>
+              <option value="rr">RR</option>
+            </select>
+
+            <label>Aging:</label>
+            <input
+              type="number"
+              min="1"
+              value={mlfqSettings.agingThreshold}
+              onChange={(e) =>
+                setMlfqSettings({
+                  ...mlfqSettings,
+                  agingThreshold: Number(e.target.value)
+                })
+              }
+              style={{ width: '100px' }}
+            />
+          </div>
         </div>
       )}
     </div>

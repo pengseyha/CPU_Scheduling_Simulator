@@ -1,118 +1,119 @@
-// src/algorithms/mlfq.js
-export default function simulateMLFQ(processes) {
-  const procs = JSON.parse(JSON.stringify(processes))
-  const queues = [[], [], []] // Level 0: highest priority
-  const quanta = [2, 4, 999999] // Last queue effectively FCFS
-  const agingThreshold = 10
+export default function simulateMLFQ(processes, settings) {
+  const { q0, q1, q2, useFCFS, agingThreshold } = settings;
 
-  procs.forEach((p) => {
-    p.level = 0
-    p.lastRunTime = -1
-    p.remaining = p.burst
-    p.response = -1
-    p.finish = 0
-    p.waiting = 0
-    p.turnaround = 0
-  })
+  const procs = JSON.parse(JSON.stringify(processes));
+  procs.sort((a, b) => a.arrival - b.arrival);
 
-  let currentTime = 0
-  const gantt = []
-  let arrIdx = 0
-  let current = null
-  let timeInQuantum = 0
-  let currentPid = null
-  let startTime = -1
+  const queues = [[], [], []];
+  const quanta = [q0, q1, useFCFS ? Infinity : q2];
+
+  procs.forEach(p => {
+    p.level = 0;
+    p.remaining = p.burst;
+    p.lastEnqueue = p.arrival;
+    p.response = -1;
+    p.finish = 0;
+  });
+
+  let currentTime = 0;
+  let current = null;
+  let timeUsed = 0;
+  let runningLevel = 0;
+
+  let arrIdx = 0;
+  const gantt = [];
+  let currentPid = null;
+  let startTime = 0;
 
   while (true) {
-    // Add newly arrived processes to queue 0
     while (arrIdx < procs.length && procs[arrIdx].arrival <= currentTime) {
-      queues[0].push(procs[arrIdx++])
+      const p = procs[arrIdx++];
+      p.level = 0;
+      p.lastEnqueue = currentTime;
+      queues[0].push(p);
     }
 
-    // Aging: promote processes that have waited too long
-    const promoted = []
-    for (let level = 1; level < 3; level++) {
-      for (let i = 0; i < queues[level].length; i++) {
-        const p = queues[level][i]
-        if (p.lastRunTime !== -1 && currentTime - p.lastRunTime > agingThreshold && p.remaining > 0) {
-          promoted.push({ p, level, index: i })
-        }
+    // Aging Q2→Q1→Q0
+    for (let lvl of [2, 1]) {
+      const stay = [];
+      for (const p of queues[lvl]) {
+        if (currentTime - p.lastEnqueue >= agingThreshold) {
+          p.level = lvl - 1;
+          p.lastEnqueue = currentTime;
+          queues[lvl - 1].push(p);
+        } else stay.push(p);
       }
-    }
-    promoted.forEach(({ p, level, index }) => {
-      queues[level].splice(index, 1)
-      p.level = Math.max(0, p.level - 1)
-      queues[p.level].push(p)
-    })
-
-    // Find highest non-empty queue
-    let level = 0
-    while (level < 3 && queues[level].length === 0) level++
-
-    if (level === 3) {
-      // No processes ready
-      const nextArrival = arrIdx < procs.length ? procs[arrIdx].arrival : Infinity
-      if (nextArrival === Infinity && queues.flat().every((p) => p.remaining === 0)) break
-
-      if (currentPid) {
-        gantt.push({ pid: currentPid, start: startTime, end: currentTime })
-      }
-      gantt.push({ pid: 'Idle', start: currentTime, end: nextArrival })
-      currentTime = nextArrival
-      current = null
-      timeInQuantum = 0
-      continue
+      queues[lvl] = stay;
     }
 
-    // Check if we need to switch
-    const needSwitch =
-      current === null ||
-      current.remaining === 0 ||
-      timeInQuantum >= quanta[current.level] ||
-      level < current.level
+    // find next queue
+    let lvl = 0;
+    while (lvl < 3 && queues[lvl].length === 0) lvl++;
+
+    if (lvl === 3 && current === null) {
+      const nextArrival = arrIdx < procs.length ? procs[arrIdx].arrival : Infinity;
+      if (nextArrival === Infinity) break;
+      if (currentPid) gantt.push({ pid: currentPid, start: startTime, end: currentTime });
+      gantt.push({ pid: "Idle", start: currentTime, end: nextArrival });
+      currentTime = nextArrival;
+      continue;
+    }
+
+    let needSwitch = false;
+    if (!current) needSwitch = true;
+    else if (current.remaining === 0) needSwitch = true;
+    else if (timeUsed === quanta[runningLevel]) needSwitch = true;
+    else if (lvl < runningLevel) needSwitch = true;
 
     if (needSwitch) {
       if (current && current.remaining > 0) {
-        if (timeInQuantum >= quanta[current.level]) {
-          // Demote
-          current.level = Math.min(2, current.level + 1)
-          queues[current.level].push(current)
-        } else {
-          // Preempted by higher priority - put back at front
-          queues[current.level].unshift(current)
+        if (timeUsed === quanta[runningLevel]) {
+          current.level = Math.min(2, current.level + 1);
         }
+        current.lastEnqueue = currentTime;
+        queues[current.level].push(current);
       }
-      current = queues[level].shift()
-      timeInQuantum = 0
-      current.lastRunTime = currentTime
-      if (current.response === -1) current.response = currentTime - current.arrival
+
+      if (lvl < 3) {
+        current = queues[lvl].shift();
+        runningLevel = current.level;
+        current.lastEnqueue = currentTime;
+      } else current = null;
+
+      timeUsed = 0;
+
+      if (currentPid !== (current?.id ?? null)) {
+        if (currentPid) gantt.push({ pid: currentPid, start: startTime, end: currentTime });
+        currentPid = current?.id ?? null;
+        startTime = currentTime;
+      }
+
+      if (current && current.response === -1) {
+        current.response = currentTime - current.arrival;
+      }
     }
 
-    // Execute one unit
-    if (currentPid !== current.id) {
-      if (currentPid) {
-        gantt.push({ pid: currentPid, start: startTime, end: currentTime })
-      }
-      startTime = currentTime
-      currentPid = current.id
+    if (current) {
+      current.remaining--;
+      timeUsed++;
     }
 
-    current.remaining--
-    timeInQuantum++
-    currentTime++
+    currentTime++;
 
-    if (current.remaining === 0) {
-      current.finish = currentTime
-      current.turnaround = current.finish - current.arrival
-      current.waiting = current.turnaround - current.burst
-      current = null
-      timeInQuantum = 0
+    // ✔ FIXED: removed “currentPid = null”
+    if (current && current.remaining === 0) {
+      current.finish = currentTime;
+      current.turnaround = current.finish - current.arrival;
+      current.waiting = current.turnaround - current.burst;
+
+      current = null;
+      timeUsed = 0;
     }
   }
 
   if (currentPid) {
-    gantt.push({ pid: currentPid, start: startTime, end: currentTime })
+    gantt.push({ pid: currentPid, start: startTime, end: currentTime });
   }
 
-  return { gantt, processes: procs }
+  return { gantt, processes: procs };
 }

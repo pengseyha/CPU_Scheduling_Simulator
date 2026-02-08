@@ -17,6 +17,15 @@ function App() {
   const [quantum, setQuantum] = useState(2)
   const [result, setResult] = useState(null)
 
+  // ⭐ Added MLFQ settings state — required for MLFQ to work
+  const [mlfqSettings, setMlfqSettings] = useState({
+    q0: 2,
+    q1: 4,
+    q2: 8,
+    modeQ2: "fcfs",
+    agingThreshold: 10
+  })
+
   const handleSimulate = () => {
     if (processes.length === 0) {
       alert('Please add at least one process before simulating.')
@@ -40,7 +49,14 @@ function App() {
         simResult = simulateRR(copied, quantum)
         break
       case 'mlfq':
-        simResult = simulateMLFQ(copied)
+        // ⭐ Pass MLFQ settings here (fixes your issue!)
+        simResult = simulateMLFQ(copied, {
+          q0: mlfqSettings.q0,
+          q1: mlfqSettings.q1,
+          q2: mlfqSettings.q2,
+          useFCFS: mlfqSettings.modeQ2 === "fcfs",
+          agingThreshold: mlfqSettings.agingThreshold
+        })
         break
       default:
         return
@@ -51,7 +67,9 @@ function App() {
     const n = updatedProcesses.length
     const avgWaiting = updatedProcesses.reduce((sum, p) => sum + p.waiting, 0) / n
     const avgTurnaround = updatedProcesses.reduce((sum, p) => sum + p.turnaround, 0) / n
-    const avgResponse = updatedProcesses.reduce((sum, p) => sum + (p.response === -1 ? 0 : p.response), 0) / n
+    const avgResponse = updatedProcesses.reduce((sum, p) =>
+      sum + (p.response === -1 ? 0 : p.response), 0
+    ) / n
 
     setResult({
       gantt,
@@ -68,11 +86,18 @@ function App() {
     <>
       <h1>CPU Scheduling Algorithm Simulator</h1>
 
-      <ProcessForm processes={processes} setProcesses={setProcesses} />
+      {/* ⭐ Pass MLFQ settings to ProcessForm */}
+      <ProcessForm
+        processes={processes}
+        setProcesses={setProcesses}
+        mlfqSettings={mlfqSettings}
+        setMlfqSettings={setMlfqSettings}
+        selectedAlgorithm={algorithm}
+      />
 
       <div className="card">
         <h2>Algorithm Selection</h2>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select 
             value={algorithm} 
             onChange={(e) => {
@@ -90,7 +115,7 @@ function App() {
 
           {algorithm === 'rr' && (
             <>
-              <label style={{ margin: 0 }}>Quantum:</label>
+              <label>Quantum:</label>
               <input
                 type="number"
                 min="1"
@@ -101,9 +126,7 @@ function App() {
             </>
           )}
 
-          <button onClick={handleSimulate}>
-            Simulate
-          </button>
+          <button onClick={handleSimulate}>Simulate</button>
         </div>
       </div>
 

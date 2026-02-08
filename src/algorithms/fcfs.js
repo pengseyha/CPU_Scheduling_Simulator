@@ -1,13 +1,14 @@
-// src/algorithms/fcfs.js
 export default function simulateFCFS(processes) {
-  const procs = JSON.parse(JSON.stringify(processes)).sort((a, b) => a.arrival - b.arrival)
+  const procs = JSON.parse(JSON.stringify(processes))
+    .sort((a, b) => a.arrival - b.arrival)
 
-  procs.forEach((p) => {
+  procs.forEach(p => {
     p.remaining = p.burst
     p.response = -1
     p.finish = 0
     p.waiting = 0
     p.turnaround = 0
+    p.start = null             // <– ADD
   })
 
   let currentTime = 0
@@ -15,14 +16,24 @@ export default function simulateFCFS(processes) {
 
   for (const p of procs) {
     if (currentTime < p.arrival) {
-      gantt.push({ pid: 'Idle', start: currentTime, end: p.arrival })
+      if (p.arrival > currentTime) {
+        gantt.push({ pid: "Idle", start: currentTime, end: p.arrival })
+      }
       currentTime = p.arrival
     }
-    if (p.response === -1) p.response = currentTime - p.arrival
+
+    if (p.response === -1) {
+      p.response = currentTime - p.arrival
+    }
+
     const start = currentTime
+    p.start = start            // <–––––––––––––––––––– ADD THIS LINE
     currentTime += p.burst
-    gantt.push({ pid: p.id, start, end: currentTime })
-    p.finish = currentTime
+    const end = currentTime
+
+    gantt.push({ pid: p.id, start, end })
+
+    p.finish = end
     p.turnaround = p.finish - p.arrival
     p.waiting = p.turnaround - p.burst
   }
