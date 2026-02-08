@@ -130,6 +130,5 @@ cpu-scheduler/
 - **Vite**: Build tool and dev server
 - **JavaScript (ES6+)**: Programming language
 
-## License
+## Link : https://docs.google.com/document/d/1Fmq_KxX6YzO__ggyUGLn3T9bD1aNxp9TYdQztDBsVlo/edit?usp=sharing
 
-This project is created for educational purposes.
