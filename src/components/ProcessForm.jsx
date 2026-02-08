@@ -110,22 +110,6 @@ export default function ProcessForm({ processes, setProcesses }) {
           style={{ width: '100px' }}
         />
         <button onClick={handleAdd}>Add</button>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-          <button onClick={() => handleLoadSample(sampleProcesses)} className="secondary" style={{ fontSize: '14px', padding: '8px 12px' }}>
-            Sample 1
-          </button>
-          <button onClick={() => handleLoadSample(sampleProcesses2)} className="secondary" style={{ fontSize: '14px', padding: '8px 12px' }}>
-            Sample 2
-          </button>
-          <button onClick={() => handleLoadSample(sampleProcesses3)} className="secondary" style={{ fontSize: '14px', padding: '8px 12px' }}>
-            Sample 3
-          </button>
-          {processes.length > 0 && (
-            <button onClick={handleClear} className="danger" style={{ fontSize: '14px', padding: '8px 12px' }}>
-              Clear
-            </button>
-          )}
-        </div>
       </div>
       {error && <p className="error-message">{error}</p>}
 

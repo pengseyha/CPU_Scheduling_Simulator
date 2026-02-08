@@ -2,7 +2,7 @@ export default function calculateMetrics(processes, timeline) {
   const metrics = {};
 
   processes.forEach((p) => {
-    metrics[p.pid] = {
+    metrics[p.id] = {
       arrival: p.arrival,
       burst: p.burst,
       start: null,
